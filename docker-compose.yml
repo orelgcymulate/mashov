@@ -1,8 +1,16 @@
+version: '3.9'
+
+# Local development: just runs Mongo. The api and web run with `npm run dev`
+# on the host because hot-reload through bind mounts is slower.
+
 services:
-  dashboard:
-    build: .
-    container_name: mashov-dashboard
+  mongo:
+    image: mongo:7
     restart: unless-stopped
-    env_file: .env
     ports:
-      - "3000:3000"
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

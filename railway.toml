@@ -1,0 +1,17 @@
+# Railway service definitions.
+# Provision two services from this monorepo + one MongoDB plugin.
+#
+# api  → builds apps/api/Dockerfile. Set env: MONGO_URL, JWT_SECRET, DASHBOARD_PASSWORD.
+# web  → builds apps/web/Dockerfile. Set env: API_URL=http://api.railway.internal:3001.
+# mongo → use Railway's built-in MongoDB plugin and attach its URL to api.
+#
+# After first deploy, run a one-off:
+#   railway run --service=api npm run seed
+
+[build]
+builder = "DOCKERFILE"
+
+[deploy]
+healthcheckPath = "/api/health"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

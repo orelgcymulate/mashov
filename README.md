@@ -1,91 +1,88 @@
 # Mashov Dashboard
 
-Family home dashboard for the Israeli school system (Mashov).
-TypeScript backend on your home network, vanilla-TS webapp on a wall-mounted tablet (iPad, Android, anything with a browser).
+Family home dashboard for managing each kid's schoolwork — homework with done-toggles, weekly schedule, grades, behavior, messages, notifications. Single password login, data lives in MongoDB, deploys to Railway.
 
-Inspired by Nimrod Mankovski's "Vibe Coding" project — a single panel that shows each kid's homework, today's schedule, teacher messages, and grades, refreshed automatically.
+This is the v2 rewrite. The legacy Express + scraped-Mashov version (with the vanilla-TS tablet UI in `public/`) was replaced by:
 
-## What it does
+- **`apps/api`** — NestJS service, REST CRUD for 7 entities + auth + dashboard summary.
+- **`apps/web`** — Next.js (App Router) webapp. RTL Hebrew. TanStack Query, polls every 60s. shadcn-style components, Tailwind. Auto-refresh after sleep / focus / reconnect.
+- **`packages/shared`** — zod schemas + types, single source of truth for both apps.
+- **MongoDB** — Railway plugin in production, plain `mongo:7` container locally.
 
-- One Express + TypeScript server, runs anywhere Node 18+ runs.
-- Logs each kid into Mashov via the unofficial [`mashov-api`](https://github.com/Apophisss/MashovApi) package, caches each section in memory.
-- Serves a Hebrew-RTL webapp at `http://<your-server>:3000`.
-- Five views: Today, Tasks (homework), Schedule (tomorrow), Messages, Grades.
-- Auto-refresh every 5 minutes. Sticky kid + view selection via `localStorage`.
-- No build step for the backend (`tsx`). One-line `esbuild` bundle for the frontend.
-
-## Setup
+## Local development
 
 ```bash
-# 1. clone, install
+# 1. install workspace deps
 npm install
 
-# 2. configure
-cp .env.example .env
-# edit .env — at minimum set KID_1_* (semel, username, password)
-# look up your school's semel here: https://web.mashov.info/api/schools
+# 2. start Mongo
+docker compose up -d mongo
 
-# 3. run in dev (watches both backend and frontend)
+# 3. configure env files
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
+
+# 4. seed mock data (Ayala + Yishai Yosef)
+npm run seed
+
+# 5. dev (api on :3001, web on :3000)
 npm run dev
-
-# or production-style
-npm run build && npm start
 ```
 
-Then visit `http://<your-server-ip>:3000` on any browser.
+Open <http://localhost:3000>. Login with the password from `apps/api/.env` (`DASHBOARD_PASSWORD`).
 
-## Run on a tablet (Android or iPad)
+## Deploy to Railway
 
-This is a plain webapp, so any tablet works. For a kiosk-style experience:
+1. Push this repo to GitHub.
+2. In Railway create **two services** from the same repo:
+   - `api` → root `apps/api/Dockerfile`
+   - `web` → root `apps/web/Dockerfile`
+3. Add the **MongoDB plugin** and attach its `MONGO_URL` env var to the `api` service.
+4. Set on `api`: `JWT_SECRET` (random), `DASHBOARD_PASSWORD` (your choice).
+5. Set on `web`: `API_URL=http://api.railway.internal:3001`.
+6. Disable the public domain on `api` (it should only be reachable from `web` over the private network).
+7. After the first deploy run the one-off:
 
-- **Android** — install [Fully Kiosk Browser](https://www.fully-kiosk.com/) (free). Set the start URL to `http://<your-server-ip>:3000`, enable autostart and screen-on. It hides the system UI and reloads on its own.
-- **iPad** — open the URL in Safari and use "Add to Home Screen". Then turn on Guided Access (Settings → Accessibility) and start it from the icon for a fullscreen, locked experience.
+   ```bash
+   railway run --service=api npm run seed
+   ```
 
-Either way the brain lives on your home server and the tablet is just a thin client — exactly the architecture from Nimrod's post.
+The `web` service is the only public URL.
 
-## Deploy with Docker
-
-```bash
-docker compose up -d --build
-```
-
-The image is multi-stage and ends up around ~150 MB on `node:20-alpine`. Works fine on a Raspberry Pi 4.
-
-## API
-
-All endpoints return JSON.
-
-| Method | Path                              | What it returns                                 |
-|--------|-----------------------------------|-------------------------------------------------|
-| GET    | `/api/health`                     | `{ ok: true, kids: [ids] }`                     |
-| GET    | `/api/kids`                       | array of `{ id, name, color }`                  |
-| GET    | `/api/kids/:kidId/summary`        | all sections for one kid, parallel              |
-| GET    | `/api/kids/:kidId/:section`       | single section: `homework`, `timetable`, `grades`, `behavior`, `messages`, `notifications` |
-
-## Files
+## What's where
 
 ```
 mashov-dashboard/
-├── src/
-│   ├── server.ts          # entire backend
-│   └── mashov-api.d.ts    # types for the upstream npm package
-├── web/
-│   └── app.ts             # entire frontend (esbuild → public/app.js)
-├── public/
-│   ├── index.html
-│   └── styles.css
-├── package.json
-├── tsconfig.json
-├── Dockerfile
-└── docker-compose.yml
+├── apps/
+│   ├── api/             NestJS
+│   │   └── src/
+│   │       ├── modules/      auth + 7 entities + dashboard
+│   │       └── seed/         seed script + mock dataset
+│   └── web/             Next.js
+│       └── src/
+│           ├── app/
+│           │   ├── login/
+│           │   └── (dash)/   today, tasks, schedule, grades, behavior, messages, notifications, kids
+│           ├── components/
+│           └── lib/hooks/    TanStack Query hooks per entity
+├── packages/
+│   └── shared/          zod schemas + types
+├── docker-compose.yml   local Mongo
+├── railway.toml         Railway hints
+└── docs/superpowers/specs/2026-05-13-nest-mongo-dashboard-design.md
 ```
 
-## Adjusting the school bell schedule
+## API (under `/api`, all routes require the session cookie except `auth/login` and `health`)
 
-`LESSON_TIMES` at the top of `web/app.ts` holds the start/end times for each lesson slot. Mashov returns lesson **numbers**, not clock times — change this table to match your school's bells.
+| Method | Path | Notes |
+|---|---|---|
+| `POST` | `/api/auth/login` | `{ password }` → sets HTTP-only cookie, 30 days, sliding |
+| `POST` | `/api/auth/logout` | clears cookie |
+| `GET` | `/api/auth/me` | 200 if cookie valid |
+| `GET/POST/PATCH/DELETE` | `/api/{entity}` | for kids, homework, schedule, grades, behavior, messages, notifications |
+| `PATCH` | `/api/homework/:id` | `{ done: true|false }` toggles completion; server manages `completedAt` |
+| `GET` | `/api/dashboard/summary?kidId=…` | aggregate for the dashboard pages |
 
-## Notes & caveats
+## Why single-password auth
 
-- The upstream `mashov-api` package is unofficial. Mashov can change their API at any moment. If a section breaks, the affected card shows an empty state and the rest of the dashboard keeps working.
-- Credentials never leave your machine. They sit in `.env`, get sent only to `web.mashov.info`. Make sure to put the server on your LAN, not on the public internet.
-- Israeli parent accounts usually have one credential per child — that's why the config has `KID_1_*`, `KID_2_*` blocks. If your school provides a single parent login that lists multiple children, you can still configure them as separate kids using the same username/password; Mashov will return only one child's data per session, so adjust if needed.
+This is a family dashboard on a wall tablet. The threat model is "kids tapping things" + "anyone on the home Wi-Fi" — not enterprise security. One shared password, one long-lived cookie, and Railway's HTTPS in front. If that's not enough for your context, swap `auth.controller.ts` for a real user system.
