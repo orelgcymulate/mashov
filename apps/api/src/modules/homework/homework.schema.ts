@@ -26,7 +26,7 @@ export class Homework {
   @Prop({ default: false })
   done!: boolean;
 
-  @Prop({ default: null })
+  @Prop({ type: Date, default: null })
   completedAt!: Date | null;
 }
 
