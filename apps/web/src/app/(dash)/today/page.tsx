@@ -4,6 +4,7 @@ import { useDashboardSummary } from '@/lib/hooks/useEntities';
 import { useKidCtx } from '@/lib/kid-context';
 import { LESSON_TIMES } from '@mashov/shared';
 import { daysUntil, todayScheduleDay } from '@/lib/dates';
+import { CallButton } from '@/components/call/CallButton';
 
 export default function TodayPage() {
   const { kids, selectedKids, loading } = useKidCtx();
@@ -135,6 +136,7 @@ export default function TodayPage() {
               </span>
               <span>שיעורי בית</span>
             </div>
+            <CallButton kidId={k._id} kidName={k.name} kidColor={k.color} />
           </div>
         ))}
       </section>

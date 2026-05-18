@@ -13,6 +13,7 @@ import { BehaviorModule } from './modules/behavior/behavior.module';
 import { MessagesModule } from './modules/messages/messages.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { CallsModule } from './modules/calls/calls.module';
 import { HealthController } from './common/health.controller';
 
 @Module({
@@ -33,6 +34,7 @@ import { HealthController } from './common/health.controller';
     MessagesModule,
     NotificationsModule,
     DashboardModule,
+    CallsModule,
   ],
   controllers: [HealthController],
   providers: [
