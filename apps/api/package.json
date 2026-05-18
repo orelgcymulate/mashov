@@ -8,6 +8,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "seed": "ts-node --transpile-only -r tsconfig-paths/register src/seed/seed.ts",
+    "test": "jest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
