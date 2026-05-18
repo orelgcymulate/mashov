@@ -8,6 +8,7 @@ export * from './message';
 export * from './notification';
 export * from './auth';
 export * from './dashboard';
+export * from './calls';
 
 export const ENTITIES = [
   'kids',
