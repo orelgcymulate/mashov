@@ -1,17 +1,38 @@
 # Railway service definitions.
-# Provision two services from this monorepo + one MongoDB plugin.
 #
-# api  → builds apps/api/Dockerfile. Set env: MONGO_URL, JWT_SECRET, DASHBOARD_PASSWORD.
-# web  → builds apps/web/Dockerfile. Set env: API_URL=http://api.railway.internal:3001.
-# mongo → use Railway's built-in MongoDB plugin and attach its URL to api.
+# Provision two services from this monorepo + one MongoDB plugin:
+#   api   → builds apps/api/Dockerfile
+#   web   → builds apps/web/Dockerfile
+#   mongo → Railway's built-in MongoDB plugin
 #
-# After first deploy, run a one-off:
-#   railway run --service=api npm run seed
+# Env vars to set:
+#   api: MONGO_URL (from mongo plugin), JWT_SECRET (random), DASHBOARD_PASSWORD
+#   web: API_URL=http://api.railway.internal:3001
+#
+# Disable the public domain on `api` — only `web` should be reachable.
+# First deploy: `railway run --service=api npm run seed` populates the DB.
 
 [build]
 builder = "DOCKERFILE"
 
 [deploy]
-healthcheckPath = "/api/health"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
+
+# --- per-service overrides ----------------------------------------------------
+
+[services.api]
+[services.api.build]
+dockerfilePath = "apps/api/Dockerfile"
+
+[services.api.deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+
+[services.web]
+[services.web.build]
+dockerfilePath = "apps/web/Dockerfile"
+
+[services.web.deploy]
+healthcheckPath = "/login"
+healthcheckTimeout = 30

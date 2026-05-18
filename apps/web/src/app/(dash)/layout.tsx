@@ -6,9 +6,11 @@ import { BottomNav } from '@/components/BottomNav';
 export default function DashLayout({ children }: { children: ReactNode }) {
   return (
     <KidProvider>
-      <TopBar />
-      <main className="max-w-5xl mx-auto px-4 pb-24 pt-4">{children}</main>
-      <BottomNav />
+      <div className="tablet-frame">
+        <TopBar />
+        <main className="pb-28 pt-3 space-y-4">{children}</main>
+        <BottomNav />
+      </div>
     </KidProvider>
   );
 }

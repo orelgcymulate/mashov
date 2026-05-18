@@ -2,15 +2,21 @@ version: '3.9'
 
 # Local development: just runs Mongo. The api and web run with `npm run dev`
 # on the host because hot-reload through bind mounts is slower.
+#
+# `scripts/mongo-init.js` runs on first boot only — it creates the database
+# and indexes. Delete the `mongo_data` volume to re-run it on a clean slate.
 
 services:
   mongo:
     image: mongo:7
     restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: mashov
     ports:
       - '27017:27017'
     volumes:
       - mongo_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
 
 volumes:
   mongo_data:

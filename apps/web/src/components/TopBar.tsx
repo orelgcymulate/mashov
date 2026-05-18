@@ -1,18 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useKidCtx } from '@/lib/kid-context';
 import { api } from '@/lib/api-client';
 import { HE_DAYS, HE_MONTHS } from '@mashov/shared';
+import { partOfDay, pad2 } from '@/lib/he';
+import { SunIcon, LogoutIcon } from '@/components/icons';
 
-function pad(n: number): string {
-  return String(n).padStart(2, '0');
-}
+const WEATHER_LABEL = process.env.NEXT_PUBLIC_WEATHER_LABEL ?? '23° בהיר';
 
 export function TopBar() {
   const router = useRouter();
-  const pathname = usePathname();
   const { kids, activeKidId, setActiveKidId } = useKidCtx();
   const [now, setNow] = useState(() => new Date());
 
@@ -26,76 +25,66 @@ export function TopBar() {
     router.push('/login');
   }
 
-  const dayLabel = `יום ${HE_DAYS[now.getDay()]}, ${now.getDate()} ${HE_MONTHS[now.getMonth()]}`;
-  const clock = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-
+  const day = HE_DAYS[now.getDay()];
+  const dayLabel = `יום ${day}, ${now.getDate()} ${HE_MONTHS[now.getMonth()]}`;
+  const clock = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+  const pod = partOfDay(now);
   const showAllTab = kids.length > 1;
 
   return (
-    <header className="border-b bg-white" style={{ borderColor: 'var(--border)' }}>
-      <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-4">
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-semibold tabular-nums">{clock}</span>
-          <span className="text-sm" style={{ color: 'var(--muted)' }}>{dayLabel}</span>
+    <header className="pt-3 pb-3">
+      <div className="flex items-start gap-4">
+        <div className="flex-1 flex flex-col gap-2 min-w-0">
+          <span className="pill pill-weather" aria-label={`מזג אוויר: ${WEATHER_LABEL}`}>
+            <SunIcon width={14} height={14} />
+            {WEATHER_LABEL}
+          </span>
+
+          {kids.length > 0 && (
+            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="תצוגה">
+              {showAllTab && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeKidId === 'all'}
+                  onClick={() => setActiveKidId('all')}
+                  className="pill pill-kid"
+                >
+                  שניהם
+                </button>
+              )}
+              {kids.map((k) => (
+                <button
+                  key={k._id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeKidId === k._id}
+                  onClick={() => setActiveKidId(k._id)}
+                  className="pill pill-kid"
+                >
+                  <span className="pill-dot" style={{ background: k.color }} aria-hidden />
+                  {k.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="flex-1" />
-
-        {kids.length > 0 && (
-          <div className="flex gap-1" role="tablist" aria-label="תצוגה">
-            {showAllTab && (
-              <TabButton selected={activeKidId === 'all'} onClick={() => setActiveKidId('all')}>
-                שניהם
-              </TabButton>
-            )}
-            {kids.map((k) => (
-              <TabButton key={k._id} selected={activeKidId === k._id} onClick={() => setActiveKidId(k._id)}>
-                <span
-                  aria-hidden
-                  className="inline-block w-2 h-2 rounded-full"
-                  style={{ background: k.color, marginInlineEnd: 6 }}
-                />
-                {k.name}
-              </TabButton>
-            ))}
-          </div>
-        )}
-
-        <button
-          onClick={logout}
-          className="btn-ghost btn"
-          aria-label="התנתק"
-          title="התנתק"
-          // keep pathname for type completeness (avoid unused warning)
-          data-path={pathname}
-        >
-          ⎋
-        </button>
+        <div className="flex flex-col items-end gap-1 shrink-0 text-right">
+          <span className="pill pill-time-of-day">{pod.label}</span>
+          <div className="text-5xl font-extrabold tabular-nums leading-none">{clock}</div>
+          <div className="text-sm" style={{ color: 'var(--fg)' }}>{dayLabel}</div>
+          <button
+            onClick={logout}
+            className="text-xs flex items-center gap-1"
+            style={{ color: 'var(--muted)' }}
+            aria-label="התנתק"
+            title="התנתק"
+          >
+            <LogoutIcon width={14} height={14} /> התנתק
+          </button>
+        </div>
       </div>
     </header>
-  );
-}
-
-function TabButton({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      role="tab"
-      aria-selected={selected}
-      onClick={onClick}
-      className={`px-3 py-1.5 rounded-full text-sm border ${
-        selected ? 'bg-black text-white border-black' : 'bg-white text-black'
-      }`}
-      style={selected ? undefined : { borderColor: 'var(--border)' }}
-    >
-      {children}
-    </button>
   );
 }

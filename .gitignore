@@ -20,3 +20,6 @@ dist/
 
 # Turbo / caches
 .turbo/
+
+# Local scratch (screenshots, debug artifacts)
+.tmp/

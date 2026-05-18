@@ -2,43 +2,53 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  HomeIcon,
+  BookIcon,
+  GridIcon,
+  CalendarIcon,
+  CheckSquareIcon,
+  SparkleIcon,
+} from '@/components/icons';
+import type { SVGProps } from 'react';
 
-const ITEMS: { href: string; label: string; icon: string }[] = [
-  { href: '/today', label: 'היום', icon: '🏠' },
-  { href: '/tasks', label: 'משימות', icon: '✓' },
-  { href: '/schedule', label: 'מערכת', icon: '📅' },
-  { href: '/grades', label: 'ציונים', icon: '★' },
-  { href: '/messages', label: 'הודעות', icon: '✉' },
-  { href: '/behavior', label: 'התנהגות', icon: '⚑' },
-  { href: '/notifications', label: 'התראות', icon: '🔔' },
-  { href: '/kids', label: 'ילדים', icon: '👧' },
+type Item = {
+  href: string;
+  label: string;
+  Icon: (p: SVGProps<SVGSVGElement>) => JSX.Element;
+};
+
+// RTL: first item appears rightmost (closest to "Home" in the photo)
+const ITEMS: Item[] = [
+  { href: '/today', label: 'היום', Icon: HomeIcon },
+  { href: '/lessons', label: 'שיעורים', Icon: BookIcon },
+  { href: '/schedule', label: 'מערכת', Icon: GridIcon },
+  { href: '/journal', label: 'יומן', Icon: CalendarIcon },
+  { href: '/tasks', label: 'משימות', Icon: CheckSquareIcon },
+  { href: '/insights', label: 'תובנות', Icon: SparkleIcon },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav
-      className="fixed bottom-0 inset-x-0 bg-white border-t"
-      style={{ borderColor: 'var(--border)' }}
-    >
-      <div className="max-w-5xl mx-auto px-2 py-2 flex justify-around items-center">
-        {ITEMS.map((it) => {
-          const active = pathname === it.href || pathname.startsWith(`${it.href}/`);
-          return (
-            <Link
-              key={it.href}
-              href={it.href}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg text-xs ${
-                active ? 'text-black font-semibold' : ''
-              }`}
-              style={!active ? { color: 'var(--muted)' } : undefined}
-              aria-current={active ? 'page' : undefined}
-            >
-              <span className="text-lg leading-none">{it.icon}</span>
-              <span>{it.label}</span>
-            </Link>
-          );
-        })}
+    <nav className="nav-bar fixed bottom-0 inset-x-0" aria-label="ניווט ראשי">
+      <div className="tablet-frame">
+        <div className="flex justify-around items-center gap-1 py-2">
+          {ITEMS.map(({ href, label, Icon }) => {
+            const active = pathname === href || pathname.startsWith(`${href}/`);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`nav-item ${active ? 'nav-item--active' : ''}`}
+                aria-current={active ? 'page' : undefined}
+              >
+                <Icon />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
