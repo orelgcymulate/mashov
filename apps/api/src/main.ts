@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, INestApplication } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
@@ -30,6 +31,21 @@ async function bootstrap(): Promise<void> {
   app.setGlobalPrefix('api');
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
+  // Swagger UI at /api/docs (raw JSON at /api/docs-json). Sits behind the
+  // session-cookie auth boundary in UI, but the docs page itself is reachable
+  // without login because SwaggerModule mounts via plain Express middleware
+  // — the global JwtAuthGuard doesn't intercept it.
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Mashov API')
+    .setDescription('Family dashboard API — auth via the `mashov_session` cookie')
+    .setVersion('0.2.0')
+    .addCookieAuth('mashov_session')
+    .build();
+  const swaggerDoc = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, swaggerDoc, {
+    swaggerOptions: { persistAuthorization: true },
+  });
 
   const port = Number(process.env.PORT) || 3001;
   await app.listen(port, '0.0.0.0');
