@@ -2,8 +2,6 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import { PROFILES, KidProfile, MashovDay } from './data';
 
-const MONGO_URL = process.env.MONGO_URL ?? 'mongodb://localhost:27017/mashov';
-
 function offsetDate(days: number, hour = 8, minute = 0): Date {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -11,9 +9,9 @@ function offsetDate(days: number, hour = 8, minute = 0): Date {
   return d;
 }
 
-async function seed(): Promise<void> {
-  console.log(`[seed] connecting to ${MONGO_URL}`);
-  await mongoose.connect(MONGO_URL);
+export async function runSeed(url: string): Promise<void> {
+  console.log(`[seed] connecting to ${url}`);
+  await mongoose.connect(url);
   const db = mongoose.connection.db!;
 
   const collections = ['kids', 'homework', 'scheduleSlots', 'grades', 'behaviorEvents', 'messages', 'notifications'];
@@ -133,7 +131,11 @@ async function seedKid(db: import('mongodb').Db, kidId: import('mongodb').Object
   );
 }
 
-seed().catch((err) => {
-  console.error('[seed] failed', err);
-  process.exit(1);
-});
+// CLI entry point — used by `npm run seed` and scripts/seed.sh.
+if (require.main === module) {
+  const url = process.env.MONGO_URL ?? 'mongodb://localhost:27017/mashov';
+  runSeed(url).catch((err) => {
+    console.error('[seed] failed', err);
+    process.exit(1);
+  });
+}

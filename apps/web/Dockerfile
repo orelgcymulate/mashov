@@ -1,11 +1,11 @@
-FROM node:20-alpine AS deps
+FROM node:20-slim AS deps
 WORKDIR /repo
 COPY package.json package-lock.json* .npmrc* ./
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
 RUN npm install --workspaces --include-workspace-root
 
-FROM node:20-alpine AS build
+FROM node:20-slim AS build
 WORKDIR /repo
 COPY --from=deps /repo/node_modules ./node_modules
 COPY . .
@@ -13,7 +13,7 @@ RUN npm run -w @mashov/shared build
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run -w @mashov/web build
 
-FROM node:20-alpine AS runtime
+FROM node:20-slim AS runtime
 WORKDIR /repo
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
