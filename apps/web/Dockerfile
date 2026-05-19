@@ -7,11 +7,16 @@ RUN npm install --workspaces --include-workspace-root
 
 FROM node:20-slim AS build
 WORKDIR /repo
+# Railway passes service variables here via --build-arg. API_URL must be
+# present at build time because Next.js evaluates next.config.mjs (and bakes
+# the rewrites manifest) during `next build`.
+ARG API_URL
+ENV API_URL=$API_URL
 COPY --from=deps /repo/node_modules ./node_modules
 COPY . .
 RUN npm run -w @mashov/shared build
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run -w @mashov/web build
+RUN echo "[build] API_URL=${API_URL:-<unset>}" && npm run -w @mashov/web build
 
 FROM node:20-slim AS runtime
 WORKDIR /repo
