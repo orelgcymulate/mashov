@@ -25,7 +25,15 @@ function LoginForm() {
     setError(null);
     setBusy(true);
     try {
-      await api.post('/api/auth/login', { password });
+      const result = await api.post<{ token: string }>('/api/auth/login', { password });
+      // Stash the JWT for the cross-origin Socket.io handshake (cookies don't
+      // cross *.up.railway.app subdomains, so the WS connection takes the
+      // token as `auth.token` in the handshake instead).
+      try {
+        if (result?.token) localStorage.setItem('mashov_token', result.token);
+      } catch {
+        /* ignore Safari private-mode quota errors */
+      }
       router.push(next);
       router.refresh();
     } catch (err) {

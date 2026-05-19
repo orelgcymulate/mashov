@@ -17,15 +17,19 @@ export class AuthController {
 
   @Public()
   @Post('login')
-  @HttpCode(204)
+  @HttpCode(200)
   @UsePipes(new ZodValidationPipe(LoginSchema))
-  login(@Body() body: LoginInput, @Res({ passthrough: true }) res: Response): void {
+  login(@Body() body: LoginInput, @Res({ passthrough: true }) res: Response): { token: string } {
     const expected = this.config.get<string>('DASHBOARD_PASSWORD');
     if (!expected || body.password !== expected) {
       throw new UnauthorizedException('bad_password');
     }
     const token = this.jwt.sign({ sub: 'dashboard' });
     res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
+    // Also return the token in the body so the web can stash it in
+    // localStorage and pass it to the cross-origin Socket.io handshake
+    // (cookies don't propagate across the *.up.railway.app subdomains).
+    return { token };
   }
 
   @Public()

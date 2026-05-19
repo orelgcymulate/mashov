@@ -12,11 +12,17 @@ WORKDIR /repo
 # the rewrites manifest) during `next build`.
 ARG API_URL
 ENV API_URL=$API_URL
+# NEXT_PUBLIC_* must be present at build time so it's inlined into the
+# client bundle. Used by call-context to open the Socket.io connection
+# directly against the api (Next's rewrites don't proxy WebSocket upgrades
+# reliably enough for cross-subdomain hosts).
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY --from=deps /repo/node_modules ./node_modules
 COPY . .
 RUN npm run -w @mashov/shared build
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN echo "[build] API_URL=${API_URL:-<unset>}" && npm run -w @mashov/web build
+RUN echo "[build] API_URL=${API_URL:-<unset>}" && echo "[build] NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-<unset>}" && npm run -w @mashov/web build
 
 FROM node:20-slim AS runtime
 WORKDIR /repo

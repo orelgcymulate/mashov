@@ -22,7 +22,10 @@ export function CallProvider({ role, children }: { role: DeviceRole; children: R
   useEffect(() => {
     const c = new CallClient(role);
     clientRef.current = c;
-    c.connect(window.location.origin);
+    // Prefer the public API URL (cross-origin direct WS) and fall back to
+    // same-origin for local dev where both apps share localhost.
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? window.location.origin;
+    c.connect(apiUrl);
     const unsub = c.subscribe(setState);
     return () => { unsub(); c.hangup(); };
   }, [role]);

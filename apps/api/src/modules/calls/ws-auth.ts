@@ -5,15 +5,20 @@ export interface SocketUser {
   sub: string;
 }
 
+/**
+ * Verifies the WebSocket handshake. Accepts the JWT from either the cookie
+ * header (same-origin clients) or an explicit token (cross-origin clients
+ * where browser cookies don't propagate, e.g. web on one Railway subdomain
+ * and api on another).
+ */
 export function authenticateHandshake(
-  cookieHeader: string | undefined,
+  args: { cookieHeader?: string; token?: string },
   jwt: JwtService,
 ): SocketUser | null {
-  if (!cookieHeader) return null;
-  const token = parseCookie(cookieHeader, SESSION_COOKIE);
-  if (!token) return null;
+  const candidate = args.token || (args.cookieHeader ? parseCookie(args.cookieHeader, SESSION_COOKIE) : null);
+  if (!candidate) return null;
   try {
-    const payload = jwt.verify<SocketUser>(token);
+    const payload = jwt.verify<SocketUser>(candidate);
     return { sub: payload.sub };
   } catch {
     return null;

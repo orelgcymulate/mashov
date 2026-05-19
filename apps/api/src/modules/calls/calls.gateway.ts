@@ -34,7 +34,15 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {}
 
   handleConnection(socket: Socket): void {
-    const user = authenticateHandshake(socket.handshake.headers.cookie, this.jwt);
+    const handshakeAuth = (socket.handshake.auth as { token?: string } | undefined) ?? {};
+    const queryToken = typeof socket.handshake.query.token === 'string' ? socket.handshake.query.token : undefined;
+    const user = authenticateHandshake(
+      {
+        cookieHeader: socket.handshake.headers.cookie,
+        token: handshakeAuth.token ?? queryToken,
+      },
+      this.jwt,
+    );
     if (!user) {
       socket.emit('error', 'unauthorized');
       socket.disconnect(true);

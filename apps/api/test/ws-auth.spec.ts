@@ -6,19 +6,33 @@ describe('authenticateHandshake', () => {
 
   it('returns the user payload when cookie holds a valid JWT', () => {
     const token = jwt.sign({ sub: 'user-1' });
-    const user = authenticateHandshake(`mashov_session=${token}; other=1`, jwt);
+    const user = authenticateHandshake({ cookieHeader: `mashov_session=${token}; other=1` }, jwt);
     expect(user).toEqual({ sub: 'user-1' });
   });
 
-  it('returns null when no cookie header', () => {
-    expect(authenticateHandshake(undefined, jwt)).toBeNull();
+  it('returns the user payload when a token is passed explicitly', () => {
+    const token = jwt.sign({ sub: 'user-1' });
+    const user = authenticateHandshake({ token }, jwt);
+    expect(user).toEqual({ sub: 'user-1' });
+  });
+
+  it('prefers the explicit token over the cookie', () => {
+    const tokenA = jwt.sign({ sub: 'a' });
+    const tokenB = jwt.sign({ sub: 'b' });
+    const user = authenticateHandshake({ cookieHeader: `mashov_session=${tokenA}`, token: tokenB }, jwt);
+    expect(user).toEqual({ sub: 'b' });
+  });
+
+  it('returns null when nothing is provided', () => {
+    expect(authenticateHandshake({}, jwt)).toBeNull();
   });
 
   it('returns null when the session cookie is missing', () => {
-    expect(authenticateHandshake('other=1', jwt)).toBeNull();
+    expect(authenticateHandshake({ cookieHeader: 'other=1' }, jwt)).toBeNull();
   });
 
   it('returns null when the JWT is invalid', () => {
-    expect(authenticateHandshake('mashov_session=garbage', jwt)).toBeNull();
+    expect(authenticateHandshake({ cookieHeader: 'mashov_session=garbage' }, jwt)).toBeNull();
+    expect(authenticateHandshake({ token: 'garbage' }, jwt)).toBeNull();
   });
 });

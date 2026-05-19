@@ -30,13 +30,15 @@ export class CallClient {
 
   connect(baseUrl: string): void {
     if (this.socket) return;
+    // Connect straight to the API origin (Next.js's rewrite doesn't reliably
+    // proxy WebSocket upgrades). Auth via the JWT stashed by the login form;
+    // cookies can't cross *.up.railway.app subdomains.
+    const token = typeof window !== 'undefined' ? localStorage.getItem('mashov_token') : null;
     this.socket = io(baseUrl, {
-      // Matches the gateway's @WebSocketGateway({ path: ... }) value. Lives under
-      // /api/* so the Next.js rewrite proxies it transparently in dev and prod.
       path: '/api/calls/socket.io',
       transports: ['websocket'],
-      withCredentials: true,
       query: { role: this.role },
+      auth: token ? { token } : undefined,
     });
 
     this.socket.on(CALL_EVENTS.incoming, (p: { callId: string; kidId: string; callerName: string }) => {
