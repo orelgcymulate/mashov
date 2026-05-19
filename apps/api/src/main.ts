@@ -11,7 +11,10 @@ import { AppModule } from './app.module';
 async function ensureMongoUrl(): Promise<void> {
   if (process.env.MONGO_URL) return;
   const { MongoMemoryServer } = await import('mongodb-memory-server');
-  const server = await MongoMemoryServer.create();
+  // Pin to a Mongo 7 binary — Debian 12 (node:20-slim) doesn't have older
+  // mongodb binaries available, and the default in mongodb-memory-server@9
+  // is 6.0.14 which fails to download there.
+  const server = await MongoMemoryServer.create({ binary: { version: '7.0.14' } });
   process.env.MONGO_URL = server.getUri();
   console.log(`[api] using in-memory MongoDB at ${server.getUri()}`);
 
