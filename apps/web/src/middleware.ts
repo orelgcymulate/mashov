@@ -1,6 +1,18 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/health'];
+const PUBLIC_PATHS = [
+  '/login',
+  '/api/auth/login',
+  '/api/health',
+  // PWA bits — must be reachable without a session for the OS / install
+  // tooling (PWABuilder, Chrome's Add-to-Home-Screen, Android TWA) to fetch.
+  '/manifest.webmanifest',
+  '/manifest.json',
+  '/icon',
+  '/apple-icon',
+  '/ring.mp3',
+  '/.well-known',
+];
 
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;

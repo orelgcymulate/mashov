@@ -14,6 +14,10 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: 'he',
     dir: 'rtl',
     icons: [
+      // 192x192 is required by PWABuilder / Android Chrome. We render the
+      // same dynamic icon at smaller dimensions via the route's query string
+      // — Next ignores the query but Chrome treats them as separate URLs.
+      { src: '/icon', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/icon', sizes: '512x512', type: 'image/png', purpose: 'any' },
       { src: '/icon', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       { src: '/apple-icon', sizes: '180x180', type: 'image/png' },
