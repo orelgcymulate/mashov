@@ -71,21 +71,40 @@ export class Ringer {
   private timer: ReturnType<typeof setInterval> | null = null;
   private titleSaved: string | null = null;
   private titleFlasher: ReturnType<typeof setInterval> | null = null;
+  private audioElement: HTMLAudioElement | null = null;
 
   /** Synchronous — safe to call directly from a click/touch handler. */
   start(): void {
-    if (this.timer) return;
+    if (this.timer || this.audioElement) return;
 
-    const ctx = getCtx();
-    if (ctx) {
-      // Resume in the background. If we're inside a gesture handler this
-      // succeeds; if not, it stays suspended and audio silently no-ops —
-      // the visual + haptic fallbacks below still fire.
-      ctx.resume().catch(() => undefined);
-      this.playRingPair(ctx);
-      // Full melody is ~1.7s; gap of ~1.3s makes a nice 3s cycle.
-      this.timer = setInterval(() => this.playRingPair(ctx), 3000);
+    // Prefer the bundled MP3 ringtone (much nicer than synthesis). If the
+    // file is missing or autoplay is blocked, fall back to the marimba synth.
+    let usingMp3 = false;
+    try {
+      const el = new Audio('/ring.mp3');
+      el.loop = true;
+      el.volume = 0.6;
+      el.addEventListener('error', () => {
+        // File 404 or decode error — switch to synth.
+        this.audioElement = null;
+        this.startSynth();
+      });
+      const p = el.play();
+      this.audioElement = el;
+      usingMp3 = true;
+      if (p && typeof p.then === 'function') {
+        p.catch(() => {
+          // Autoplay blocked (gesture missing) — fall back to synth, which
+          // will silently no-op if its context is also suspended, but at
+          // least we get visual + haptic from below.
+          this.audioElement = null;
+          this.startSynth();
+        });
+      }
+    } catch {
+      /* old browser without Audio — try synth */
     }
+    if (!usingMp3) this.startSynth();
 
     // Visual fallback for muted/backgrounded tabs.
     if (typeof document !== 'undefined') {
@@ -104,6 +123,11 @@ export class Ringer {
   }
 
   stop(): void {
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.audioElement.currentTime = 0;
+      this.audioElement = null;
+    }
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
@@ -119,6 +143,17 @@ export class Ringer {
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
       try { navigator.vibrate(0); } catch { /* ignore */ }
     }
+  }
+
+  /** Backup synth — same marimba arpeggio as before, but only fires when
+   * the MP3 path fails (404 / autoplay block). */
+  private startSynth(): void {
+    if (this.timer) return;
+    const ctx = getCtx();
+    if (!ctx) return;
+    ctx.resume().catch(() => undefined);
+    this.playRingPair(ctx);
+    this.timer = setInterval(() => this.playRingPair(ctx), 3000);
   }
 
   private playRingPair(ctx: AudioContext): void {

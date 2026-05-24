@@ -30,6 +30,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=build /repo/node_modules ./node_modules
 COPY --from=build /repo/apps/web/.next ./apps/web/.next
+COPY --from=build /repo/apps/web/public ./apps/web/public
 COPY --from=build /repo/apps/web/next.config.mjs ./apps/web/next.config.mjs
 COPY --from=build /repo/apps/web/package.json ./apps/web/package.json
 COPY --from=build /repo/packages/shared/dist ./packages/shared/dist
