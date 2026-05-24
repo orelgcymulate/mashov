@@ -189,6 +189,59 @@ html, body {
   color: white;
 }
 
+/* Call button (used on the call-strip + anywhere a kid-specific call is offered) */
+.call-button {
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(20, 22, 28, 0.12);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.call-button:not(:disabled):active {
+  transform: scale(0.96);
+}
+.call-button:disabled {
+  cursor: not-allowed;
+}
+
+/* Call strip — prominent row of "התקשר לX" pills at the top of /today.
+   Primary action for the phone view; on the wall tablet it's just one more
+   shortcut. Each card stretches to fill its slot. */
+.call-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.call-strip__card {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-shadow: var(--shadow-card);
+}
+.call-strip__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+}
+.call-strip__name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
 /* Bottom nav */
 .nav-bar {
   background: white;

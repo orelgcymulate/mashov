@@ -56,6 +56,19 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-4">
+      {/* Prominent call strip — primary action on the phone view. */}
+      <section className="call-strip">
+        {selectedKids.map((k) => (
+          <div key={k._id} className="call-strip__card" style={{ borderColor: tintFor(k.color, 0.5) }}>
+            <span className="call-strip__avatar" style={{ background: k.color }} aria-hidden>
+              {k.name[0]}
+            </span>
+            <span className="call-strip__name" style={{ color: k.color }}>{k.name}</span>
+            <CallButton kidId={k._id} kidName={k.name} kidColor={k.color} />
+          </div>
+        ))}
+      </section>
+
       {urgent.length > 0 && (
         <section className="alert-forget">
           <div className="flex items-center justify-end mb-2">
@@ -136,7 +149,6 @@ export default function TodayPage() {
               </span>
               <span>שיעורי בית</span>
             </div>
-            <CallButton kidId={k._id} kidName={k.name} kidColor={k.color} />
           </div>
         ))}
       </section>

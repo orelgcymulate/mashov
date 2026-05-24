@@ -15,20 +15,30 @@ interface Ctx {
 
 const CallCtx = createContext<Ctx | null>(null);
 
-export function CallProvider({ role, children }: { role: DeviceRole; children: ReactNode }) {
+export function CallProvider({
+  role,
+  apiUrl,
+  children,
+}: {
+  role: DeviceRole;
+  /** Public api origin, passed from the server layout. Empty string falls back to same-origin. */
+  apiUrl?: string;
+  children: ReactNode;
+}) {
   const clientRef = useRef<CallClient | null>(null);
   const [state, setState] = useState<CallState>({ phase: 'idle' });
 
   useEffect(() => {
     const c = new CallClient(role);
     clientRef.current = c;
-    // Prefer the public API URL (cross-origin direct WS) and fall back to
-    // same-origin for local dev where both apps share localhost.
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? window.location.origin;
-    c.connect(apiUrl);
+    // Direct WS to the api (Next.js's rewrites don't reliably proxy WebSocket
+    // upgrades across machines). Server layout passes apiUrl from process.env;
+    // we fall back to window.origin only when it's empty.
+    const target = apiUrl && apiUrl.length > 0 ? apiUrl : window.location.origin;
+    c.connect(target);
     const unsub = c.subscribe(setState);
     return () => { unsub(); c.hangup(); };
-  }, [role]);
+  }, [role, apiUrl]);
 
   const api: Ctx = {
     state,
