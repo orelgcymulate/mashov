@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Ringer } from '@/lib/calls/ringer';
+import { Ringer, unlockAudioFromGesture } from '@/lib/calls/ringer';
 import type { DeviceRole } from '@mashov/shared';
 
 const COOKIE = 'mashov_device';
@@ -25,12 +25,15 @@ export default function SettingsPage() {
   }, []);
 
   const testRing = (): void => {
+    // Synchronous unlock first (iOS Safari needs the audio context created
+    // + a silent buffer played in the same gesture frame).
+    unlockAudioFromGesture();
     if (!ringerRef.current) ringerRef.current = new Ringer();
     if (ringing) {
       ringerRef.current.stop();
       setRinging(false);
     } else {
-      ringerRef.current.start().catch(() => undefined);
+      ringerRef.current.start();
       setRinging(true);
       setTimeout(() => {
         ringerRef.current?.stop();
