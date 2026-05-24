@@ -83,7 +83,8 @@ export class Ringer {
       // the visual + haptic fallbacks below still fire.
       ctx.resume().catch(() => undefined);
       this.playRingPair(ctx);
-      this.timer = setInterval(() => this.playRingPair(ctx), 2500);
+      // Full melody is ~1.7s; gap of ~1.3s makes a nice 3s cycle.
+      this.timer = setInterval(() => this.playRingPair(ctx), 3000);
     }
 
     // Visual fallback for muted/backgrounded tabs.
@@ -123,26 +124,54 @@ export class Ringer {
   private playRingPair(ctx: AudioContext): void {
     if (ctx.state !== 'running') return;
     const now = ctx.currentTime;
-    // Classic phone ring: two ~0.4s warbled tones, 100ms gap.
-    this.beep(ctx, now, 0.4);
-    this.beep(ctx, now + 0.5, 0.4);
+    // iPhone-style marimba chime: C-E-G-C arpeggio up, G-E-C down.
+    // Each note is a sine + 3rd harmonic with exponential decay — sounds like
+    // a struck bell rather than a synth bleep.
+    const notes: Array<[number, number, number]> = [
+      // [startOffset, durationSec, freq]
+      [0.00, 0.18, 523.25],   // C5
+      [0.18, 0.18, 659.25],   // E5
+      [0.36, 0.18, 783.99],   // G5
+      [0.54, 0.32, 1046.5],   // C6
+      [0.95, 0.18, 783.99],   // G5
+      [1.13, 0.18, 659.25],   // E5
+      [1.31, 0.36, 523.25],   // C5
+    ];
+    for (const [offset, dur, freq] of notes) {
+      this.note(ctx, now + offset, dur, freq);
+    }
   }
 
-  private beep(ctx: AudioContext, at: number, dur: number): void {
+  private note(ctx: AudioContext, at: number, dur: number, freq: number): void {
     try {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(480, at);
-      osc.frequency.setValueAtTime(440, at + dur / 2);
-      gain.gain.setValueAtTime(0, at);
-      gain.gain.linearRampToValueAtTime(0.5, at + 0.04);
-      gain.gain.setValueAtTime(0.5, at + dur - 0.04);
-      gain.gain.linearRampToValueAtTime(0, at + dur);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(at);
-      osc.stop(at + dur);
+      // Master gain: quick attack, exponential decay → bell-like.
+      const out = ctx.createGain();
+      out.gain.setValueAtTime(0.0001, at);
+      out.gain.exponentialRampToValueAtTime(0.5, at + 0.01);
+      out.gain.exponentialRampToValueAtTime(0.001, at + dur);
+      out.connect(ctx.destination);
+
+      // Fundamental (sine).
+      const fund = ctx.createOscillator();
+      fund.type = 'sine';
+      fund.frequency.value = freq;
+      fund.connect(out);
+      fund.start(at);
+      fund.stop(at + dur);
+
+      // Higher harmonic at 1/3 volume — adds the "bell" shimmer.
+      const overGain = ctx.createGain();
+      overGain.gain.setValueAtTime(0.0001, at);
+      overGain.gain.exponentialRampToValueAtTime(0.18, at + 0.005);
+      overGain.gain.exponentialRampToValueAtTime(0.001, at + dur * 0.7);
+      overGain.connect(out);
+
+      const over = ctx.createOscillator();
+      over.type = 'sine';
+      over.frequency.value = freq * 3;
+      over.connect(overGain);
+      over.start(at);
+      over.stop(at + dur);
     } catch {
       /* ignore — ctx may have closed */
     }
