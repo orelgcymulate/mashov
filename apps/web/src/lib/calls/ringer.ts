@@ -18,9 +18,8 @@ let unlocked = false;
 
 function getCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null;
-  const Ctx: typeof AudioContext | undefined =
-    (window as Window & { webkitAudioContext?: typeof AudioContext }).AudioContext ??
-    (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+  const Ctx = w.AudioContext ?? w.webkitAudioContext;
   if (!Ctx) return null;
   if (!sharedCtx) sharedCtx = new Ctx();
   return sharedCtx;
