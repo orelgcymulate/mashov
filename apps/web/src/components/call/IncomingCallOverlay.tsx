@@ -2,14 +2,20 @@
 
 import { useEffect, useRef } from 'react';
 import { useCall } from '@/lib/calls/call-context';
+import { Ringer } from '@/lib/calls/ringer';
 
 export function IncomingCallOverlay() {
   const { state, accept, decline } = useCall();
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const ringerRef = useRef<Ringer | null>(null);
 
   useEffect(() => {
-    if (state.phase === 'incoming-ringing') audioRef.current?.play().catch(() => undefined);
-    else audioRef.current?.pause();
+    if (state.phase === 'incoming-ringing') {
+      if (!ringerRef.current) ringerRef.current = new Ringer();
+      ringerRef.current.start();
+    } else {
+      ringerRef.current?.stop();
+    }
+    return () => { ringerRef.current?.stop(); };
   }, [state.phase]);
 
   if (state.phase !== 'incoming-ringing') return null;
@@ -19,7 +25,6 @@ export function IncomingCallOverlay() {
       className="fixed inset-0 z-50 grid place-items-center"
       style={{ background: 'rgba(20, 22, 28, 0.92)' }}
     >
-      <audio ref={audioRef} loop preload="auto" src="/ring.mp3" />
       <div className="text-center text-white space-y-6 px-8">
         <div className="text-sm opacity-70">שיחה נכנסת</div>
         <div className="text-4xl font-bold">{state.callerName}</div>
