@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Ringer } from '@/lib/calls/ringer';
 import type { DeviceRole } from '@mashov/shared';
 
 const COOKIE = 'mashov_device';
@@ -15,10 +16,28 @@ function readRole(): DeviceRole {
 export default function SettingsPage() {
   const router = useRouter();
   const [current, setCurrent] = useState<DeviceRole>('phone');
+  const [ringing, setRinging] = useState(false);
+  const ringerRef = useRef<Ringer | null>(null);
 
   useEffect(() => {
     setCurrent(readRole());
+    return () => { ringerRef.current?.stop(); };
   }, []);
+
+  const testRing = (): void => {
+    if (!ringerRef.current) ringerRef.current = new Ringer();
+    if (ringing) {
+      ringerRef.current.stop();
+      setRinging(false);
+    } else {
+      ringerRef.current.start().catch(() => undefined);
+      setRinging(true);
+      setTimeout(() => {
+        ringerRef.current?.stop();
+        setRinging(false);
+      }, 5000);
+    }
+  };
 
   const choose = (role: DeviceRole): void => {
     if (role === 'tablet') {
@@ -59,6 +78,21 @@ export default function SettingsPage() {
       <div className="text-xs pt-4" style={{ color: 'var(--muted)' }}>
         ההגדרה נשמרת ב-cookie על המכשיר הזה. ניתן לשנות בכל רגע.
       </div>
+
+      <section className="card p-4 space-y-3 mt-6">
+        <h2 className="text-base font-bold">בדיקת צלצול</h2>
+        <p className="text-sm" style={{ color: 'var(--muted)' }}>
+          לחץ כאן כדי לשמוע את צלצול השיחה. אם אינך שומע — בדוק עוצמת השמע במכשיר וודא שהטאב לא במצב השתקה.
+        </p>
+        <button
+          type="button"
+          onClick={testRing}
+          className="call-button w-full justify-center"
+          style={{ background: ringing ? '#ef4444' : 'var(--accent)' }}
+        >
+          {ringing ? '⏹ עצור' : '🔊 בדוק צלצול'}
+        </button>
+      </section>
 
       <button
         onClick={() => router.back()}
