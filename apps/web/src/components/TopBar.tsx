@@ -6,7 +6,8 @@ import { useKidCtx } from '@/lib/kid-context';
 import { api } from '@/lib/api-client';
 import { HE_DAYS, HE_MONTHS } from '@mashov/shared';
 import { partOfDay, pad2 } from '@/lib/he';
-import { SunIcon, LogoutIcon } from '@/components/icons';
+import Link from 'next/link';
+import { SunIcon, LogoutIcon, SettingsIcon } from '@/components/icons';
 
 const WEATHER_LABEL = process.env.NEXT_PUBLIC_WEATHER_LABEL ?? '23° בהיר';
 
@@ -74,15 +75,26 @@ export function TopBar() {
           <span className="pill pill-time-of-day">{pod.label}</span>
           <div className="text-5xl font-extrabold tabular-nums leading-none">{clock}</div>
           <div className="text-sm" style={{ color: 'var(--fg)' }}>{dayLabel}</div>
-          <button
-            onClick={logout}
-            className="text-xs flex items-center gap-1"
-            style={{ color: 'var(--muted)' }}
-            aria-label="התנתק"
-            title="התנתק"
-          >
-            <LogoutIcon width={14} height={14} /> התנתק
-          </button>
+          <div className="flex items-center gap-3 mt-1">
+            <Link
+              href="/settings"
+              className="text-xs flex items-center gap-1"
+              style={{ color: 'var(--muted)' }}
+              aria-label="הגדרות"
+              title="הגדרות"
+            >
+              <SettingsIcon width={14} height={14} /> הגדרות
+            </Link>
+            <button
+              onClick={logout}
+              className="text-xs flex items-center gap-1"
+              style={{ color: 'var(--muted)' }}
+              aria-label="התנתק"
+              title="התנתק"
+            >
+              <LogoutIcon width={14} height={14} /> התנתק
+            </button>
+          </div>
         </div>
       </div>
     </header>
