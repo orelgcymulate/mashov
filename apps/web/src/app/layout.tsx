@@ -14,6 +14,14 @@ const heebo = Heebo({
 export const metadata: Metadata = {
   title: 'דשבורד משפחתי',
   description: 'משימות, מערכת וציונים של הילדים',
+  // PWA: enables Add-to-Home-Screen with the manifest icons, standalone UI,
+  // and an iOS-friendly home-screen experience (no browser chrome).
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'משפחה',
+  },
 };
 
 export const viewport: Viewport = {
@@ -21,7 +29,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#f4f5f7',
+  themeColor: '#f4a52a',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
