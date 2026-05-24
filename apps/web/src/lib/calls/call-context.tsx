@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { CallClient, type CallState } from './call-client';
+import { primeAudio } from './ringer';
 import type { DeviceRole } from '@mashov/shared';
 
 interface Ctx {
@@ -29,6 +30,10 @@ export function CallProvider({
   const [state, setState] = useState<CallState>({ phase: 'idle' });
 
   useEffect(() => {
+    // Create the shared AudioContext now + arm the user-gesture unlock so the
+    // first nav/click in the dashboard primes it before any call arrives.
+    primeAudio();
+
     const c = new CallClient(role);
     clientRef.current = c;
     // Direct WS to the api (Next.js's rewrites don't reliably proxy WebSocket
