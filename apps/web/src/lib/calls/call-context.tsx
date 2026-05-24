@@ -6,8 +6,9 @@ import { primeAudio } from './ringer';
 import type { DeviceRole } from '@mashov/shared';
 
 interface Ctx {
+  role: DeviceRole;
   state: CallState;
-  initiate: (kidId: string) => void;
+  initiate: (kidId: string, callerName?: string) => void;
   accept: () => Promise<void>;
   decline: () => void;
   hangup: () => void;
@@ -46,8 +47,9 @@ export function CallProvider({
   }, [role, apiUrl]);
 
   const api: Ctx = {
+    role,
     state,
-    initiate: (kidId) => clientRef.current?.initiate(kidId),
+    initiate: (kidId, callerName) => clientRef.current?.initiate(kidId, callerName),
     accept: () => clientRef.current?.accept() ?? Promise.resolve(),
     decline: () => clientRef.current?.decline(),
     hangup: () => clientRef.current?.hangup(),

@@ -12,6 +12,10 @@ export const CallIdSchema = z.string().min(1);
 export const InitiateCallSchema = z.object({
   // Which kid this call is for (used as ring metadata; routing is role-based).
   kidId: z.string().regex(/^[a-fA-F0-9]{24}$/),
+  // Optional display name for the incoming-call screen. Server defaults to
+  // 'הורה' when a phone calls the tablet, or the kid's own name when the
+  // tablet calls a phone.
+  callerName: z.string().min(1).max(80).optional(),
 });
 export type InitiateCallPayload = z.infer<typeof InitiateCallSchema>;
 

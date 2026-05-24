@@ -70,13 +70,13 @@ export class CallClient {
     return () => this.listeners.delete(fn);
   }
 
-  initiate(kidId: string): void {
+  initiate(kidId: string, callerName?: string): void {
     if (!this.socket) return;
     // Allow starting a new call from idle OR from ended (after the previous
     // call wrapped up). Anything else is mid-call → no-op.
     if (this.state.phase !== 'idle' && this.state.phase !== 'ended') return;
     this.setState({ phase: 'outgoing-ringing', callId: '', kidId });
-    this.socket.emit(CALL_EVENTS.initiate, { kidId });
+    this.socket.emit(CALL_EVENTS.initiate, { kidId, ...(callerName ? { callerName } : {}) });
   }
 
   async accept(): Promise<void> {

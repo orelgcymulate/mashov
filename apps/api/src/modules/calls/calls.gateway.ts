@@ -75,21 +75,41 @@ export class CallsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const parse = InitiateCallSchema.safeParse(body);
     if (!parse.success) return;
     const entry = this.svc.socketEntry(socket.id);
-    if (!entry || entry.role !== 'phone') return;
+    if (!entry) return;
+
     try {
-      const call = this.svc.startCall({
+      // Phone calls the tablet; tablet calls any registered phone.
+      let calleeSocketId: string;
+      let defaultCallerName: string;
+      if (entry.role === 'phone') {
+        const tablet = this.svc.tabletSocketFor(entry.userId);
+        if (!tablet) throw new Error('no_tablet');
+        calleeSocketId = tablet;
+        defaultCallerName = 'הורה';
+      } else {
+        const phones = this.svc.phoneSocketsFor(entry.userId);
+        if (phones.length === 0) throw new Error('no_phone');
+        // Ring the first connected phone. (If you ever have multiple parents
+        // online, we can fan out — for now first-wins.)
+        calleeSocketId = phones[0];
+        defaultCallerName = 'הילד';
+      }
+
+      const call = this.svc.startCallWith({
         userId: entry.userId,
         callerSocketId: socket.id,
+        calleeSocketId,
         kidId: parse.data.kidId,
       });
       this.server.to(call.calleeSocketId).emit(CALL_EVENTS.incoming, {
         callId: call.id,
         kidId: call.kidId,
-        callerName: 'הורה',
+        callerName: parse.data.callerName ?? defaultCallerName,
       });
       socket.emit(CALL_EVENTS.outgoing, { callId: call.id });
     } catch (err) {
-      const reason = (err as Error).message === 'no_tablet' ? 'no_tablet' : 'error';
+      const msg = (err as Error).message;
+      const reason = msg === 'no_tablet' ? 'no_tablet' : msg === 'no_phone' ? 'no_phone' : 'error';
       socket.emit(CALL_EVENTS.ended, { callId: '', reason });
     }
   }

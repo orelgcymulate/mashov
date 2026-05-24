@@ -58,15 +58,29 @@ export class CallsService {
     return Array.from(this.byUser.get(userId)?.phones ?? []);
   }
 
+  /**
+   * Original (back-compat) overload: phone → tablet routing. Looks up the
+   * registered tablet socket for the user and throws 'no_tablet' if absent.
+   */
   startCall(args: { userId: string; callerSocketId: string; kidId: string }): Call {
     const tablet = this.tabletSocketFor(args.userId);
     if (!tablet) throw new Error('no_tablet');
+    return this.startCallWith({ ...args, calleeSocketId: tablet });
+  }
+
+  /** Explicit-callee variant: caller picks who to ring (used for tablet→phone). */
+  startCallWith(args: {
+    userId: string;
+    callerSocketId: string;
+    calleeSocketId: string;
+    kidId: string;
+  }): Call {
     const call: Call = {
       id: `${Date.now().toString(36)}-${randomBytes(4).toString('hex')}`,
       userId: args.userId,
       kidId: args.kidId,
       callerSocketId: args.callerSocketId,
-      calleeSocketId: tablet,
+      calleeSocketId: args.calleeSocketId,
       startedAt: Date.now(),
     };
     this.calls.set(call.id, call);
